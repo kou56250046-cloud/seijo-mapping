@@ -48,7 +48,7 @@ export default function LoginPage() {
         {/* ロゴ・タイトル */}
         <div className="login-header">
           <div className="login-icon">✝</div>
-          <h1 className="login-title">成城チャーチ</h1>
+          <h1 className="login-title">成城教会</h1>
           <p className="login-subtitle">メンバーマップ</p>
         </div>
 

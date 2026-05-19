@@ -914,6 +914,114 @@ button { cursor: pointer; font-family: inherit; }
   flex-shrink: 0;
 }
 
+/* ─── Mobile Tab Bar (hidden on desktop) ─────────── */
+.mobile-tab-bar { display: none; }
+
+/* ─── Mobile FAB on map (hidden on desktop) ──────── */
+.fab-map { display: none; }
+
+/* ─── Responsive: Mobile ─────────────────────────── */
+@media (max-width: 767px) {
+  /* Layout */
+  .app { height: 100dvh; }
+
+  .main-layout { position: relative; }
+
+  /* Sidebar: hidden by default, shown when mobileVisible */
+  .sidebar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    z-index: 10;
+    display: none;
+    border-right: none;
+    box-shadow: none;
+  }
+
+  .sidebar.mobile-visible { display: flex; }
+
+  /* Sidebar FAB hidden on mobile (use map FAB instead) */
+  .fab-sidebar { display: none; }
+
+  /* Map area: hidden by default, shown when mobileVisible */
+  .map-area {
+    display: none;
+    width: 100%;
+  }
+
+  .map-area.mobile-visible { display: block; }
+
+  /* FAB on map area */
+  .fab-map {
+    display: flex;
+    position: absolute;
+    bottom: 24px;
+    right: 16px;
+    z-index: 20;
+  }
+
+  /* Header */
+  .header { padding: 0 12px; height: 52px; }
+
+  .header-title { font-size: 13px; }
+
+  .header-actions { gap: 4px; }
+
+  .header-btn { padding: 6px 10px; font-size: 12px; gap: 4px; }
+
+  .header-btn-text { display: none; }
+
+  .header-btn-logout-icon { font-size: 15px; }
+
+  /* Bottom tab bar */
+  .mobile-tab-bar {
+    display: flex;
+    height: 56px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+    z-index: 50;
+  }
+
+  .mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 6px 0;
+    transition: color 0.2s;
+  }
+
+  .mobile-tab-icon { font-size: 20px; line-height: 1; }
+
+  .mobile-tab-label { font-size: 10px; font-weight: 600; }
+
+  .mobile-tab-active { color: var(--accent); }
+
+  .mobile-tab-active .mobile-tab-icon {
+    filter: drop-shadow(0 0 4px rgba(79,70,229,0.5));
+  }
+
+  /* Member card actions: always visible on touch */
+  .member-card-actions { opacity: 1; }
+
+  /* Member list padding to avoid overlap with nothing */
+  .sidebar-list { padding-bottom: 16px; }
+
+  /* Sidebar top compact */
+  .sidebar-top { padding: 10px 12px; gap: 10px; }
+
+  /* Popup sizing */
+  .popup-single, .popup-family { min-width: 160px; max-width: 220px; padding: 12px; }
+}
+
 /* ─── Leaflet overrides ──────────────────────────── */
 .leaflet-container { background: #e8edf2; }
 

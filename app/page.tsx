@@ -9,6 +9,8 @@ import Sidebar from '@/components/Sidebar';
 import MemberModal from '@/components/MemberModal';
 import ImportModal from '@/components/ImportModal';
 
+type MobileTab = 'map' | 'list';
+
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
 
 export default function Home() {
@@ -21,6 +23,7 @@ export default function Home() {
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<MobileTab>('map');
 
   const fetchMembers = useCallback(async () => {
     const res = await fetch('/api/members');
@@ -97,11 +100,12 @@ export default function Home() {
           onHobbyChange={setActiveHobbies}
           onEdit={openEdit}
           onDelete={handleDelete}
-          onFocus={setFocusedMember}
+          onFocus={(m) => { setFocusedMember(m); setMobileTab('map'); }}
           onAdd={openAdd}
+          mobileVisible={mobileTab === 'list'}
         />
 
-        <div className="map-area">
+        <div className={`map-area${mobileTab === 'map' ? ' mobile-visible' : ''}`}>
           <MapView
             members={members}
             selectedCategory={selectedCategory}
@@ -109,8 +113,28 @@ export default function Home() {
             focusedMember={focusedMember}
             onMemberClick={(m) => { openEdit(m); }}
           />
+          <button className="fab fab-map" onClick={openAdd} title="メンバーを追加">
+            <span className="fab-icon">＋</span>
+          </button>
         </div>
       </div>
+
+      <nav className="mobile-tab-bar">
+        <button
+          className={`mobile-tab${mobileTab === 'map' ? ' mobile-tab-active' : ''}`}
+          onClick={() => setMobileTab('map')}
+        >
+          <span className="mobile-tab-icon">🗺️</span>
+          <span className="mobile-tab-label">地図</span>
+        </button>
+        <button
+          className={`mobile-tab${mobileTab === 'list' ? ' mobile-tab-active' : ''}`}
+          onClick={() => setMobileTab('list')}
+        >
+          <span className="mobile-tab-icon">👥</span>
+          <span className="mobile-tab-label">メンバー</span>
+        </button>
+      </nav>
 
       {isModalOpen && (
         <MemberModal

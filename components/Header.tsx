@@ -15,13 +15,13 @@ export default function Header({ onImport, onExport, onLogout }: HeaderProps) {
       </div>
       <div className="header-actions">
         <button className="header-btn" onClick={onImport}>
-          <span>📥</span> CSVインポート
+          <span>📥</span><span className="header-btn-text"> CSVインポート</span>
         </button>
         <button className="header-btn" onClick={onExport}>
-          <span>📤</span> エクスポート
+          <span>📤</span><span className="header-btn-text"> エクスポート</span>
         </button>
         <button className="header-btn header-btn-logout" onClick={onLogout}>
-          ログアウト
+          <span className="header-btn-logout-icon">🚪</span><span className="header-btn-text"> ログアウト</span>
         </button>
       </div>
     </header>

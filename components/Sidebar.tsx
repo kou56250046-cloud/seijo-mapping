@@ -20,6 +20,7 @@ interface SidebarProps {
   onDelete: (id: string) => void;
   onFocus: (member: Member) => void;
   onAdd: () => void;
+  mobileVisible?: boolean;
 }
 
 export default function Sidebar({
@@ -36,9 +37,10 @@ export default function Sidebar({
   onFocus,
   onAdd,
   members,
+  mobileVisible,
 }: SidebarProps) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${mobileVisible ? ' mobile-visible' : ''}`}>
       <div className="sidebar-inner">
         <div className="sidebar-top">
           <SearchBox value={searchQuery} onChange={onSearch} />
@@ -59,7 +61,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      <button className="fab" onClick={onAdd} title="メンバーを追加">
+      <button className="fab fab-sidebar" onClick={onAdd} title="メンバーを追加">
         <span className="fab-icon">＋</span>
       </button>
     </aside>
