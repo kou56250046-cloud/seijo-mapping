@@ -43,19 +43,27 @@ function buildGroups(members: Member[]): HouseholdGroup[] {
   return groups;
 }
 
-function createPinIcon(color: string, count: number, dimmed: boolean): L.DivIcon {
+function createPinIcon(color: string, count: number, dimmed: boolean, photoUrl?: string): L.DivIcon {
   const isFamily = count > 1;
-  const size = isFamily ? 42 : 34;
+  const size = isFamily ? 42 : 36;
   const opacity = dimmed ? 0.25 : 1;
-  const inner = isFamily
-    ? `<span style="font-size:10px;line-height:1">👨‍👩‍👧<br/>${count}</span>`
-    : `<span style="font-size:16px">●</span>`;
+
+  let inner: string;
+  if (photoUrl) {
+    const badge = isFamily ? `<div class="map-pin-count">${count}</div>` : '';
+    inner = `<img src="${photoUrl}" alt="" class="map-pin-img" />${badge}`;
+  } else if (isFamily) {
+    inner = `<span style="font-size:10px;line-height:1">👨‍👩‍👧<br/>${count}</span>`;
+  } else {
+    inner = `<span style="font-size:16px">●</span>`;
+  }
 
   return L.divIcon({
     className: '',
     html: `
-      <div class="map-pin${dimmed ? '' : ' map-pin-active'}" style="
-        background:${color};
+      <div class="map-pin${dimmed ? '' : ' map-pin-active'}${photoUrl ? ' map-pin-photo' : ''}" style="
+        background:${photoUrl ? '#fff' : color};
+        border-color:${color};
         width:${size}px;
         height:${size}px;
         opacity:${opacity};
@@ -122,7 +130,8 @@ export default function MapView({
           ? (CATEGORY_COLORS[primary.category as Category] ?? '#6B7280')
           : '#374151';
 
-        const icon = createPinIcon(color, group.members.length, !hasActiveHobby);
+        const photoUrl = primary.photo_url || undefined;
+        const icon = createPinIcon(color, group.members.length, !hasActiveHobby, photoUrl);
 
         return (
           <Marker key={group.key} position={[group.lat, group.lng]} icon={icon}>

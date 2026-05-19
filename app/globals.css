@@ -407,6 +407,40 @@ button { cursor: pointer; font-family: inherit; }
 
 .map-pin-active { filter: drop-shadow(0 0 6px currentColor); }
 
+.map-pin-photo {
+  overflow: hidden;
+  position: relative;
+  padding: 0;
+}
+
+.map-pin-photo:hover { filter: brightness(1.08); }
+
+.map-pin-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+
+.map-pin-count {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #fff;
+  padding: 0 3px;
+}
+
 /* ─── Map Popups ─────────────────────────────────── */
 .leaflet-popup-content-wrapper {
   background: #ffffff !important;
