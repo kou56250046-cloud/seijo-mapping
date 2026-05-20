@@ -190,6 +190,26 @@ export default function MapView({
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
     map.on('load', () => {
+      // 道路標識（E20・311 など）を非表示
+      ['highway-shield-non-us', 'highway-shield-us-interstate', 'road_shield_us'].forEach((id) => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+      });
+
+      // 地図の色を少し暗めに調整
+      const colorAdjustments: Array<[string, string, string]> = [
+        ['background',       'background-color', '#e0dbd4'],
+        ['park',             'fill-color',       '#bccead'],
+        ['water',            'fill-color',       'rgb(120,160,235)'],
+        ['landcover_grass',  'fill-color',       'rgba(148,185,126,1)'],
+        ['landcover_wood',   'fill-color',       'hsla(98,50%,58%,0.7)'],
+        ['landuse_cemetery', 'fill-color',       'hsl(75,30%,72%)'],
+        ['landuse_hospital', 'fill-color',       '#f0d0e0'],
+        ['landuse_school',   'fill-color',       'rgb(218,220,184)'],
+      ];
+      colorAdjustments.forEach(([layerId, prop, value]) => {
+        if (map.getLayer(layerId)) map.setPaintProperty(layerId, prop, value);
+      });
+
       map.addSource('members', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
