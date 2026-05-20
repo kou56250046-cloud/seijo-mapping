@@ -5,7 +5,7 @@ import './globals.css';
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' });
 
 export const metadata: Metadata = {
-  title: '成城チャーチ メンバーマップ',
+  title: '成城教会 メンバーマップ',
   description: '教会メンバーの居住地マップ',
 };
 
