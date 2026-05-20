@@ -33,7 +33,7 @@ def normalize_hobbies(val: str) -> str:
     return "|".join(parts)
 
 # ─── 区分のバリデーション ────────────────────────────────────────
-VALID_CATEGORIES = {"青年", "家庭青年", "壮年", "壮婦", "教会長"}
+VALID_CATEGORIES = {"小中高生", "青年", "家庭青年", "壮年", "壮婦", "教会長"}
 
 def normalize_category(val: str) -> str:
     v = str(val).strip() if isinstance(val, str) else ""

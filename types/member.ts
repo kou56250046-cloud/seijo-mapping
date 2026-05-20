@@ -1,6 +1,6 @@
-export type Category = '青年' | '家庭青年' | '壮年' | '壮婦' | '教会長';
+export type Category = '青年' | '家庭青年' | '壮年' | '壮婦' | '教会長' | '小中高生';
 
-export const CATEGORIES: Category[] = ['青年', '家庭青年', '壮年', '壮婦', '教会長'];
+export const CATEGORIES: Category[] = ['小中高生', '青年', '家庭青年', '壮年', '壮婦', '教会長'];
 
 export const CATEGORY_COLORS: Record<Category, string> = {
   青年: '#3B82F6',
@@ -8,6 +8,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   壮年: '#F97316',
   壮婦: '#EC4899',
   教会長: '#8B5CF6',
+  小中高生: '#22C55E',
 };
 
 export interface Member {
