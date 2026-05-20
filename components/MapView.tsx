@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, useMemo, useState } from 'react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Member, Category } from '@/types/member';
 import { CATEGORY_COLORS } from '@/types/member';
 
@@ -43,44 +42,103 @@ function buildGroups(members: Member[]): HouseholdGroup[] {
   return groups;
 }
 
-function createPinIcon(color: string, count: number, dimmed: boolean, photoUrl?: string): L.DivIcon {
-  const isFamily = count > 1;
-  const size = isFamily ? 42 : 36;
-  const opacity = dimmed ? 0.25 : 1;
-
-  let inner: string;
-  if (photoUrl) {
-    const badge = isFamily ? `<div class="map-pin-count">${count}</div>` : '';
-    inner = `<img src="${photoUrl}" alt="" class="map-pin-img" />${badge}`;
-  } else if (isFamily) {
-    inner = `<span style="font-size:10px;line-height:1">👨‍👩‍👧<br/>${count}</span>`;
-  } else {
-    inner = `<span style="font-size:16px">●</span>`;
-  }
-
-  return L.divIcon({
-    className: '',
-    html: `
-      <div class="map-pin${dimmed ? '' : ' map-pin-active'}${photoUrl ? ' map-pin-photo' : ''}" style="
-        background:${photoUrl ? '#fff' : color};
-        border-color:${color};
-        width:${size}px;
-        height:${size}px;
-        opacity:${opacity};
-      ">${inner}</div>
-    `,
-    iconSize: [size, size + 10],
-    iconAnchor: [size / 2, size + 10],
-    popupAnchor: [0, -(size + 10)],
-  });
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-function MapFocuser({ lat, lng }: { lat: number; lng: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo([lat, lng], 16, { duration: 0.8 });
-  }, [lat, lng, map]);
-  return null;
+function buildPopupHtml(group: HouseholdGroup): string {
+  const { members } = group;
+  const primary = members[0];
+  const isFamily = members.length > 1;
+
+  if (isFamily) {
+    const memberItems = members
+      .map((m) => {
+        const color = CATEGORY_COLORS[m.category as Category] ?? '#6B7280';
+        const photoEl = m.photo_url
+          ? `<img src="${escapeHtml(m.photo_url)}" alt="${escapeHtml(m.name)}" class="popup-photo" />`
+          : `<div class="popup-avatar" style="background:${color}">${escapeHtml(m.name[0])}</div>`;
+        const hobbies = m.hobbies.slice(0, 2).join('・');
+        return `
+          <div class="popup-family-member" data-member-id="${escapeHtml(m.id)}">
+            ${photoEl}
+            <div>
+              <div class="popup-name">${escapeHtml(m.name)}</div>
+              <div class="popup-meta">${escapeHtml(m.category)}${hobbies ? ` · ${escapeHtml(hobbies)}` : ''}</div>
+            </div>
+          </div>`;
+      })
+      .join('');
+
+    return `
+      <div class="popup-family">
+        <p class="popup-family-title">👨‍👩‍👧 世帯 · ${members.length}名</p>
+        ${memberItems}
+        <div class="popup-address">${escapeHtml(primary.address)}</div>
+      </div>`;
+  }
+
+  const color = CATEGORY_COLORS[primary.category as Category] ?? '#6B7280';
+  const photoEl = primary.photo_url
+    ? `<img src="${escapeHtml(primary.photo_url)}" alt="${escapeHtml(primary.name)}" class="popup-photo-lg" />`
+    : `<div class="popup-avatar-lg" style="background:${color}">${escapeHtml(primary.name[0])}</div>`;
+
+  const hobbiesHtml =
+    primary.hobbies.length > 0
+      ? `<div class="popup-hobbies">${primary.hobbies
+          .map((h) => `<span class="hobby-chip">${escapeHtml(h)}</span>`)
+          .join('')}</div>`
+      : '';
+
+  return `
+    <div class="popup-single" data-member-id="${escapeHtml(primary.id)}">
+      <div class="popup-single-header">
+        ${photoEl}
+        <div>
+          <div class="popup-name-lg">${escapeHtml(primary.name)}</div>
+          <span class="popup-category-badge" style="background:${color}">${escapeHtml(primary.category)}</span>
+        </div>
+      </div>
+      ${hobbiesHtml}
+      <div class="popup-address">${escapeHtml(primary.address)}</div>
+    </div>`;
+}
+
+function groupsToGeoJSON(
+  groups: HouseholdGroup[],
+  activeHobbies: string[],
+): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = groups.map((group) => {
+    const primary = group.members[0];
+    const hasActiveHobby =
+      activeHobbies.length === 0 ||
+      group.members.some((m) => m.hobbies.some((h) => activeHobbies.includes(h)));
+
+    const color = hasActiveHobby
+      ? (CATEGORY_COLORS[primary.category as Category] ?? '#6B7280')
+      : '#9CA3AF';
+
+    return {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [group.lng, group.lat] },
+      properties: {
+        key: group.key,
+        primaryMemberId: primary.id,
+        category: primary.category,
+        color,
+        opacity: hasActiveHobby ? 1 : 0.3,
+        memberCount: group.members.length,
+        popupHtml: buildPopupHtml(group),
+      },
+    };
+  });
+
+  return { type: 'FeatureCollection', features };
 }
 
 interface MapViewProps {
@@ -98,107 +156,174 @@ export default function MapView({
   focusedMember,
   onMemberClick,
 }: MapViewProps) {
-  const groups = useMemo(() => {
-    const filtered = selectedCategory
-      ? members.filter((m) => m.category === selectedCategory)
-      : members;
-    return buildGroups(filtered);
-  }, [members, selectedCategory]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const onMemberClickRef = useRef(onMemberClick);
+  const membersRef = useRef(members);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
-  return (
-    <MapContainer
-      center={[35.6415, 139.6454]}
-      zoom={13}
-      style={{ width: '100%', height: '100%' }}
-    >
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        maxZoom={20}
-      />
-      {focusedMember?.lat && focusedMember?.lng && (
-        <MapFocuser lat={focusedMember.lat} lng={focusedMember.lng} />
-      )}
-      {groups.map((group) => {
-        const isFamily = group.members.length > 1;
-        const primary = group.members[0];
-        const hasActiveHobby =
-          activeHobbies.length === 0 ||
-          group.members.some((m) => m.hobbies.some((h) => activeHobbies.includes(h)));
+  useEffect(() => { onMemberClickRef.current = onMemberClick; }, [onMemberClick]);
+  useEffect(() => { membersRef.current = members; }, [members]);
 
-        const color = hasActiveHobby
-          ? (CATEGORY_COLORS[primary.category as Category] ?? '#6B7280')
-          : '#374151';
+  const allGroups = useMemo(() => buildGroups(members), [members]);
 
-        const photoUrl = primary.photo_url || undefined;
-        const icon = createPinIcon(color, group.members.length, !hasActiveHobby, photoUrl);
+  const filteredGroups = useMemo(() => {
+    if (!selectedCategory) return allGroups;
+    return allGroups.filter((g) =>
+      g.members.some((m) => m.category === selectedCategory),
+    );
+  }, [allGroups, selectedCategory]);
 
-        return (
-          <Marker key={group.key} position={[group.lat, group.lng]} icon={icon}>
-            <Popup className="member-popup" maxWidth={280}>
-              {isFamily ? (
-                <div className="popup-family">
-                  <p className="popup-family-title">👨‍👩‍👧 世帯 · {group.members.length}名</p>
-                  {group.members.map((m) => (
-                    <div
-                      key={m.id}
-                      className="popup-family-member"
-                      onClick={() => onMemberClick(m)}
-                    >
-                      {m.photo_url ? (
-                        <img src={m.photo_url} alt={m.name} className="popup-photo" />
-                      ) : (
-                        <div className="popup-avatar" style={{ background: CATEGORY_COLORS[m.category as Category] }}>
-                          {m.name[0]}
-                        </div>
-                      )}
-                      <div>
-                        <div className="popup-name">{m.name}</div>
-                        <div className="popup-meta">{m.category}
-                          {m.hobbies.length > 0 && ` · ${m.hobbies.slice(0, 2).join('・')}`}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="popup-address">{primary.address}</div>
-                </div>
-              ) : (
-                <div className="popup-single" onClick={() => onMemberClick(primary)}>
-                  <div className="popup-single-header">
-                    {primary.photo_url ? (
-                      <img src={primary.photo_url} alt={primary.name} className="popup-photo-lg" />
-                    ) : (
-                      <div
-                        className="popup-avatar-lg"
-                        style={{ background: CATEGORY_COLORS[primary.category as Category] }}
-                      >
-                        {primary.name[0]}
-                      </div>
-                    )}
-                    <div>
-                      <div className="popup-name-lg">{primary.name}</div>
-                      <span
-                        className="popup-category-badge"
-                        style={{ background: CATEGORY_COLORS[primary.category as Category] }}
-                      >
-                        {primary.category}
-                      </span>
-                    </div>
-                  </div>
-                  {primary.hobbies.length > 0 && (
-                    <div className="popup-hobbies">
-                      {primary.hobbies.map((h) => (
-                        <span key={h} className="hobby-chip">{h}</span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="popup-address">{primary.address}</div>
-                </div>
-              )}
-            </Popup>
-          </Marker>
-        );
-      })}
-    </MapContainer>
-  );
+  // マップの初期化（一度だけ）
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: containerRef.current,
+      style: 'https://tiles.openfreemap.org/styles/liberty',
+      center: [139.6454, 35.6415],
+      zoom: 13,
+    });
+
+    mapRef.current = map;
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    map.on('load', () => {
+      map.addSource('members', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+        cluster: true,
+        clusterRadius: 50,
+        clusterMaxZoom: 14,
+      });
+
+      // クラスター円
+      map.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: 'members',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': '#4f46e5',
+          'circle-radius': ['step', ['get', 'point_count'], 22, 5, 28, 15, 36],
+          'circle-opacity': 0.88,
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // クラスター件数テキスト
+      map.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: 'members',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-size': 13,
+          'text-font': ['Noto Sans Bold'],
+        },
+        paint: { 'text-color': '#ffffff' },
+      });
+
+      // 個別メンバーポイント
+      map.addLayer({
+        id: 'unclustered-point',
+        type: 'circle',
+        source: 'members',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': ['coalesce', ['get', 'color'], '#6B7280'],
+          'circle-radius': 13,
+          'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // 世帯グループの人数バッジ
+      map.addLayer({
+        id: 'unclustered-label',
+        type: 'symbol',
+        source: 'members',
+        filter: ['all', ['!', ['has', 'point_count']], ['>', ['coalesce', ['get', 'memberCount'], 0], 1]],
+        layout: {
+          'text-field': ['to-string', ['coalesce', ['get', 'memberCount'], '']],
+          'text-size': 11,
+          'text-font': ['Noto Sans Bold'],
+        },
+        paint: { 'text-color': '#ffffff' },
+      });
+
+      // クラスタークリック → ズームイン
+      map.on('click', 'clusters', async (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
+        if (!features.length) return;
+        const clusterId = features[0].properties.cluster_id as number;
+        const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number];
+        try {
+          const zoom = await (map.getSource('members') as maplibregl.GeoJSONSource).getClusterExpansionZoom(clusterId);
+          map.easeTo({ center: coords, zoom });
+        } catch {
+          map.easeTo({ center: coords, zoom: map.getZoom() + 2 });
+        }
+      });
+
+      // 個別ポイントクリック → ポップアップ表示
+      map.on('click', 'unclustered-point', (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['unclustered-point'] });
+        if (!features.length) return;
+        const props = features[0].properties as { primaryMemberId: string; popupHtml: string };
+        const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number];
+
+        popupRef.current?.remove();
+        const popup = new maplibregl.Popup({ offset: 20, maxWidth: '300px' })
+          .setLngLat(coords)
+          .setHTML(props.popupHtml)
+          .addTo(map);
+        popupRef.current = popup;
+
+        // ポップアップ内のメンバークリックをデリゲート
+        popup.getElement()?.addEventListener('click', (ev) => {
+          const el = (ev.target as HTMLElement).closest<HTMLElement>('[data-member-id]');
+          if (!el) return;
+          const memberId = el.dataset.memberId;
+          const member = membersRef.current.find((m) => m.id === memberId);
+          if (member) onMemberClickRef.current(member);
+        });
+      });
+
+      map.on('mouseenter', 'clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'clusters', () => { map.getCanvas().style.cursor = ''; });
+      map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = ''; });
+
+      setMapLoaded(true);
+    });
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // フィルター変更時にGeoJSONデータを更新
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+    const source = mapRef.current.getSource('members') as maplibregl.GeoJSONSource | undefined;
+    source?.setData(groupsToGeoJSON(filteredGroups, activeHobbies));
+  }, [mapLoaded, filteredGroups, activeHobbies]);
+
+  // 選択メンバーへフォーカス
+  useEffect(() => {
+    if (!focusedMember?.lat || !focusedMember?.lng || !mapRef.current) return;
+    mapRef.current.flyTo({
+      center: [focusedMember.lng, focusedMember.lat],
+      zoom: 16,
+      duration: 800,
+    });
+  }, [focusedMember]);
+
+  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
 }

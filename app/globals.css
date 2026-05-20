@@ -442,21 +442,25 @@ button { cursor: pointer; font-family: inherit; }
 }
 
 /* ─── Map Popups ─────────────────────────────────── */
-.leaflet-popup-content-wrapper {
-  background: #ffffff !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius) !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.14) !important;
-  padding: 0 !important;
+.maplibregl-popup-content {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+  padding: 0;
   animation: fadeIn 0.2s ease;
 }
 
-.leaflet-popup-content { margin: 0 !important; width: auto !important; }
+.maplibregl-popup-tip { border-top-color: #ffffff; }
 
-.leaflet-popup-tip { background: #ffffff !important; }
-
-.leaflet-popup-close-button { color: var(--text-muted) !important; }
+.maplibregl-popup-close-button {
+  color: var(--text-muted);
+  font-size: 18px;
+  padding: 4px 8px;
+  top: 4px;
+  right: 4px;
+}
 
 .popup-single, .popup-family {
   padding: 14px;
@@ -1056,21 +1060,25 @@ button { cursor: pointer; font-family: inherit; }
   .popup-single, .popup-family { min-width: 160px; max-width: 220px; padding: 12px; }
 }
 
-/* ─── Leaflet overrides ──────────────────────────── */
-.leaflet-container { background: #e8edf2; }
-
-.leaflet-control-zoom a {
-  background: #ffffff !important;
-  color: var(--text) !important;
-  border-color: var(--border) !important;
+/* ─── MapLibre overrides ─────────────────────────── */
+.maplibregl-ctrl-group {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
-.leaflet-control-zoom a:hover { background: #f1f5f9 !important; }
+.maplibregl-ctrl-group button {
+  background: #ffffff;
+  color: var(--text);
+}
 
-.leaflet-control-attribution {
-  background: rgba(255,255,255,0.85) !important;
-  color: var(--text-muted) !important;
+.maplibregl-ctrl-group button:hover { background: #f1f5f9; }
+
+.maplibregl-ctrl-attrib {
+  background: rgba(255,255,255,0.85);
+  color: var(--text-muted);
   backdrop-filter: blur(4px);
+  font-size: 10px;
 }
 
-.leaflet-control-attribution a { color: var(--accent) !important; }
+.maplibregl-ctrl-attrib a { color: var(--accent); }
