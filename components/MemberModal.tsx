@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent, KeyboardEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent, KeyboardEvent } from 'react';
 import type { Member, MemberInput, Category } from '@/types/member';
 import { CATEGORIES, CATEGORY_COLORS } from '@/types/member';
 
@@ -26,6 +26,10 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
   const [hobbyInput, setHobbyInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const prevObjectUrl = useRef<string | null>(null);
 
   useEffect(() => {
     if (member) {
@@ -44,7 +48,46 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
     }
     setHobbyInput('');
     setError('');
+    setUploadError('');
+    setPreviewUrl(member?.photo_url ?? null);
+    if (prevObjectUrl.current) {
+      URL.revokeObjectURL(prevObjectUrl.current);
+      prevObjectUrl.current = null;
+    }
   }, [member]);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (prevObjectUrl.current) URL.revokeObjectURL(prevObjectUrl.current);
+    const objectUrl = URL.createObjectURL(file);
+    prevObjectUrl.current = objectUrl;
+    setPreviewUrl(objectUrl);
+    setUploadError('');
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (!res.ok) {
+        setUploadError(json.error ?? 'アップロードに失敗しました');
+        setPreviewUrl(form.photo_url ?? null);
+        URL.revokeObjectURL(objectUrl);
+        prevObjectUrl.current = null;
+      } else {
+        setForm((f) => ({ ...f, photo_url: json.url }));
+      }
+    } catch {
+      setUploadError('アップロードに失敗しました');
+      setPreviewUrl(form.photo_url ?? null);
+      URL.revokeObjectURL(objectUrl);
+      prevObjectUrl.current = null;
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
 
   function addHobby() {
     const h = hobbyInput.trim();
@@ -128,12 +171,29 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
           </div>
 
           <div className="form-row">
-            <label className="form-label">写真URL</label>
+            <label className="form-label">写真</label>
+            {previewUrl && (
+              <img src={previewUrl} alt="プレビュー" className="photo-preview" />
+            )}
+            <label className="photo-upload-btn">
+              {uploading ? 'アップロード中...' : '画像を選択'}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={uploading}
+                style={{ display: 'none' }}
+              />
+            </label>
+            {uploadError && <p className="form-error">{uploadError}</p>}
             <input
               className="form-input"
               value={form.photo_url ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, photo_url: e.target.value || null }))}
-              placeholder="https://example.com/photo.jpg"
+              onChange={(e) => {
+                setForm((f) => ({ ...f, photo_url: e.target.value || null }));
+                setPreviewUrl(e.target.value || null);
+              }}
+              placeholder="または画像URLを直接入力"
             />
           </div>
 
@@ -175,7 +235,7 @@ export default function MemberModal({ member, onClose, onSave }: MemberModalProp
 
           <div className="modal-footer">
             <button type="button" className="btn-cancel" onClick={onClose}>キャンセル</button>
-            <button type="submit" className="btn-save" disabled={saving}>
+            <button type="submit" className="btn-save" disabled={saving || uploading}>
               {saving ? '保存中...' : '保存'}
             </button>
           </div>

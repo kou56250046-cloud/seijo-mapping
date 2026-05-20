@@ -855,6 +855,34 @@ button { cursor: pointer; font-family: inherit; }
 
 .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
+/* ─── Photo Upload ───────────────────────────────── */
+.photo-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.photo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(79,70,229,0.04);
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+}
+
+.photo-upload-btn:hover { border-color: var(--accent); background: rgba(79,70,229,0.08); }
+
 /* ─── Import Modal ───────────────────────────────── */
 .import-format {
   background: #f8fafc;
