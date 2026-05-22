@@ -208,38 +208,6 @@ export default function MapView({
       map.addSource('members', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
-        cluster: true,
-        clusterRadius: 50,
-        clusterMaxZoom: 14,
-      });
-
-      // クラスター円
-      map.addLayer({
-        id: 'clusters',
-        type: 'circle',
-        source: 'members',
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': '#4f46e5',
-          'circle-radius': ['step', ['get', 'point_count'], 22, 5, 28, 15, 36],
-          'circle-opacity': 0.88,
-          'circle-stroke-width': 3,
-          'circle-stroke-color': '#ffffff',
-        },
-      });
-
-      // クラスター件数テキスト
-      map.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: 'members',
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': '{point_count_abbreviated}',
-          'text-size': 13,
-          'text-font': ['Noto Sans Bold'],
-        },
-        paint: { 'text-color': '#ffffff' },
       });
 
       // 個別メンバーポイント
@@ -247,7 +215,6 @@ export default function MapView({
         id: 'unclustered-point',
         type: 'circle',
         source: 'members',
-        filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-color': ['coalesce', ['get', 'color'], '#6B7280'],
           'circle-radius': 13,
@@ -262,27 +229,13 @@ export default function MapView({
         id: 'unclustered-label',
         type: 'symbol',
         source: 'members',
-        filter: ['all', ['!', ['has', 'point_count']], ['>', ['coalesce', ['get', 'memberCount'], 0], 1]],
+        filter: ['>', ['coalesce', ['get', 'memberCount'], 0], 1],
         layout: {
           'text-field': ['to-string', ['coalesce', ['get', 'memberCount'], '']],
           'text-size': 11,
           'text-font': ['Noto Sans Bold'],
         },
         paint: { 'text-color': '#ffffff' },
-      });
-
-      // クラスタークリック → ズームイン
-      map.on('click', 'clusters', async (e) => {
-        const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
-        if (!features.length) return;
-        const clusterId = features[0].properties.cluster_id as number;
-        const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number];
-        try {
-          const zoom = await (map.getSource('members') as maplibregl.GeoJSONSource).getClusterExpansionZoom(clusterId);
-          map.easeTo({ center: coords, zoom });
-        } catch {
-          map.easeTo({ center: coords, zoom: map.getZoom() + 2 });
-        }
       });
 
       // 個別ポイントクリック → ポップアップ表示
@@ -309,8 +262,6 @@ export default function MapView({
         });
       });
 
-      map.on('mouseenter', 'clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
-      map.on('mouseleave', 'clusters', () => { map.getCanvas().style.cursor = ''; });
       map.on('mouseenter', 'unclustered-point', () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', 'unclustered-point', () => { map.getCanvas().style.cursor = ''; });
 
