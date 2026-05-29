@@ -29,7 +29,7 @@ def normalize_address(address: str) -> str:
     address = re.sub(r'[\n\r\t]', ' ', address)
     address = re.sub(r'^〒?\s*\d{3}-?\d{4}\s*', '', address)
     address = unicodedata.normalize('NFKC', address)
-    address = re.sub(r'[－ーｰ−–—━～]', '-', address)
+    address = re.sub(r'[－ｰ−–—━～]', '-', address)  # ー（長音符）は変換しない
     address = address.replace('　', ' ')
     address = re.sub(r'\s+', ' ', address)
     return address.strip()
