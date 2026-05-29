@@ -1,5 +1,6 @@
 import re
 import io
+import unicodedata
 import pandas as pd
 import streamlit as st
 
@@ -22,6 +23,16 @@ def convert_drive_url(url: str) -> str:
     if m:
         return f"https://drive.google.com/uc?export=view&id={m.group(1)}"
     return url
+
+# ─── 住所の正規化 ────────────────────────────────────────────────
+def normalize_address(address: str) -> str:
+    address = re.sub(r'[\n\r\t]', ' ', address)
+    address = re.sub(r'^〒?\s*\d{3}-?\d{4}\s*', '', address)
+    address = unicodedata.normalize('NFKC', address)
+    address = re.sub(r'[－ーｰ−–—━～]', '-', address)
+    address = address.replace('　', ' ')
+    address = re.sub(r'\s+', ' ', address)
+    return address.strip()
 
 # ─── 趣味の区切り変換（カンマ → パイプ）───────────────────────────
 def normalize_hobbies(val: str) -> str:
@@ -113,7 +124,7 @@ if uploaded:
         errors = []
         for i, row in df_raw.iterrows():
             name = str(row.get(col_name, "")).strip()
-            address = str(row.get(col_address, "")).strip()
+            address = normalize_address(str(row.get(col_address, "")))
             if not name or not address:
                 errors.append(f"行 {i+2}: 氏名または住所が空のためスキップ")
                 continue

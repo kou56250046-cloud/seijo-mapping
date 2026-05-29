@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/lib/supabase';
 import { parseCsv } from '@/lib/csv';
-import { geocodeWithDelay } from '@/lib/geocode';
 
 export async function POST(request: NextRequest) {
   const supabase = createServerClient();
@@ -27,23 +26,12 @@ export async function POST(request: NextRequest) {
   const results = { success: 0, failed: 0, total: members.length, errors: [] as string[] };
 
   for (const member of members) {
-    try {
-      const geo = await geocodeWithDelay(member.address);
-      const { error } = await supabase.from('members').insert({
-        ...member,
-        lat: geo?.lat ?? null,
-        lng: geo?.lng ?? null,
-      });
-
-      if (error) {
-        results.failed++;
-        results.errors.push(`${member.name}: ${error.message}`);
-      } else {
-        results.success++;
-      }
-    } catch {
+    const { error } = await supabase.from('members').insert(member);
+    if (error) {
       results.failed++;
-      results.errors.push(`${member.name}: 予期しないエラー`);
+      results.errors.push(`${member.name}: ${error.message}`);
+    } else {
+      results.success++;
     }
   }
 

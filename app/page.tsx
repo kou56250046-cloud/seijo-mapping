@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Member, MemberInput, Category } from '@/types/member';
 import Header from '@/components/Header';
@@ -24,13 +24,54 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>('map');
+  const [geocodeStatus, setGeocodeStatus] = useState<string | null>(null);
+  const isGeocodingRef = useRef(false);
 
-  const fetchMembers = useCallback(async () => {
-    const res = await fetch('/api/members');
-    if (res.ok) setMembers(await res.json());
+  const geocodePending = useCallback(async (memberList: Member[]) => {
+    if (isGeocodingRef.current) return;
+    const pending = memberList.filter(m => m.lat === null || m.lng === null);
+    if (pending.length === 0) return;
+
+    isGeocodingRef.current = true;
+    try {
+      for (let i = 0; i < pending.length; i++) {
+        if (!isGeocodingRef.current) break;
+        const member = pending[i];
+        setGeocodeStatus(`位置情報を取得中... ${i + 1} / ${pending.length}`);
+        const res = await fetch('/api/geocode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: member.id, address: member.address }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setMembers(prev => prev.map(m =>
+              m.id === member.id ? { ...m, lat: data.lat, lng: data.lng } : m
+            ));
+          }
+        }
+        await new Promise(r => setTimeout(r, 1100));
+      }
+    } finally {
+      isGeocodingRef.current = false;
+      setGeocodeStatus(null);
+    }
   }, []);
 
-  useEffect(() => { fetchMembers(); }, [fetchMembers]);
+  const fetchMembers = useCallback(async (): Promise<Member[]> => {
+    const res = await fetch('/api/members');
+    if (res.ok) {
+      const data: Member[] = await res.json();
+      setMembers(data);
+      return data;
+    }
+    return [];
+  }, []);
+
+  useEffect(() => {
+    fetchMembers().then(geocodePending);
+  }, [fetchMembers, geocodePending]);
 
   const allHobbies = useMemo(() => {
     const set = new Set<string>();
@@ -86,6 +127,10 @@ export default function Home() {
   return (
     <div className="app">
       <Header onImport={() => setIsImportOpen(true)} onExport={handleExport} onLogout={handleLogout} />
+
+      {geocodeStatus && (
+        <div className="geocode-status-bar">{geocodeStatus}</div>
+      )}
 
       <div className="main-layout">
         <Sidebar
@@ -147,7 +192,11 @@ export default function Home() {
       {isImportOpen && (
         <ImportModal
           onClose={() => setIsImportOpen(false)}
-          onComplete={() => { fetchMembers(); setIsImportOpen(false); }}
+          onComplete={() => {
+            setIsImportOpen(false);
+            isGeocodingRef.current = false;
+            fetchMembers().then(geocodePending);
+          }}
         />
       )}
     </div>

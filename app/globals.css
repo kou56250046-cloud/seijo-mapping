@@ -138,6 +138,16 @@ button { cursor: pointer; font-family: inherit; }
   background: rgba(220,38,38,0.07);
 }
 
+/* ─── Geocode Status Bar ─────────────────────────── */
+.geocode-status-bar {
+  background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+  padding: 4px 12px;
+  letter-spacing: 0.02em;
+}
+
 /* ─── Sidebar ────────────────────────────────────── */
 .sidebar {
   width: 300px;
@@ -238,7 +248,7 @@ button { cursor: pointer; font-family: inherit; }
   text-decoration: underline;
 }
 
-.filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow-y: auto; }
 
 .filter-chip {
   padding: 4px 10px;

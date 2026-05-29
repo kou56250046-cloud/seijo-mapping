@@ -1,24 +1,27 @@
-const CACHE_NAME = 'seijo-mapping-v1';
-const STATIC_ASSETS = ['/'];
+const CACHE_NAME = 'seijo-mapping-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
+  if (location.hostname !== 'localhost') {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) => cache.addAll(['/']))
+    );
+  }
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+    if (location.hostname === 'localhost') {
+      await self.registration.unregister();
+    }
+    self.clients.claim();
+  })());
 });
 
 self.addEventListener('fetch', (event) => {
-  // API・外部リクエストはキャッシュしない
+  if (location.hostname === 'localhost') return;
   if (event.request.url.includes('/api/') || !event.request.url.startsWith(self.location.origin)) {
     return;
   }

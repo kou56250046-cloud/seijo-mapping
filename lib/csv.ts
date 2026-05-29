@@ -11,7 +11,8 @@ interface CsvRow {
 }
 
 export function parseCsv(csvText: string): MemberInput[] {
-  const result = Papa.parse<CsvRow>(csvText, {
+  const text = csvText.replace(/^﻿/, '');
+  const result = Papa.parse<CsvRow>(text, {
     header: true,
     skipEmptyLines: true,
     transformHeader: (h) => h.trim(),
