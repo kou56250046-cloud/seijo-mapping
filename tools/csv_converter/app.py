@@ -144,6 +144,19 @@ if uploaded:
                 "世帯ID": "",
             })
 
+        # 同じ住所のメンバーに同じ世帯IDを自動付与
+        from collections import Counter
+        addr_count = Counter(row["住所"] for row in rows)
+        address_to_hid: dict[str, str] = {}
+        hid_counter = 1
+        for row in rows:
+            addr = row["住所"]
+            if addr_count[addr] > 1:
+                if addr not in address_to_hid:
+                    address_to_hid[addr] = str(hid_counter)
+                    hid_counter += 1
+                row["世帯ID"] = address_to_hid[addr]
+
         if errors:
             with st.expander(f"スキップされた行: {len(errors)} 件"):
                 for e in errors:

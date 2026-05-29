@@ -14,32 +14,24 @@ type HouseholdGroup = {
 };
 
 function buildGroups(members: Member[]): HouseholdGroup[] {
-  const familyMap = new Map<string, Member[]>();
-  const singles: Member[] = [];
+  const groupMap = new Map<string, Member[]>();
 
   for (const member of members) {
-    if (member.household_id) {
-      const group = familyMap.get(member.household_id) ?? [];
-      familyMap.set(member.household_id, [...group, member]);
-    } else {
-      singles.push(member);
-    }
-  }
-
-  const groups: HouseholdGroup[] = [];
-
-  for (const [hid, mems] of familyMap.entries()) {
-    const anchor = mems.find((m) => m.lat && m.lng);
-    if (!anchor) continue;
-    groups.push({ key: `h-${hid}`, members: mems, lat: anchor.lat!, lng: anchor.lng! });
-  }
-
-  for (const member of singles) {
     if (!member.lat || !member.lng) continue;
-    groups.push({ key: `s-${member.id}`, members: [member], lat: member.lat, lng: member.lng });
+    // household_id があれば優先、なければ座標（小数5桁）でグループ化
+    const key = member.household_id
+      ? `h-${member.household_id}`
+      : `c-${member.lat.toFixed(5)}-${member.lng.toFixed(5)}`;
+    const group = groupMap.get(key) ?? [];
+    groupMap.set(key, [...group, member]);
   }
 
-  return groups;
+  return Array.from(groupMap.entries()).map(([key, mems]) => ({
+    key,
+    members: mems,
+    lat: mems[0].lat!,
+    lng: mems[0].lng!,
+  }));
 }
 
 function escapeHtml(str: string): string {
