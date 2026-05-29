@@ -17,7 +17,7 @@ export default function Home() {
   const router = useRouter();
   const [members, setMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category[]>([]);
   const [activeHobbies, setActiveHobbies] = useState<string[]>([]);
   const [focusedMember, setFocusedMember] = useState<Member | null>(null);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -83,7 +83,7 @@ export default function Home() {
     return members.filter((m) => {
       const q = searchQuery.toLowerCase();
       const matchesSearch = !q || m.name.includes(q) || m.address.includes(q);
-      const matchesCategory = !selectedCategory || m.category === selectedCategory;
+      const matchesCategory = selectedCategory.length === 0 || selectedCategory.includes(m.category);
       return matchesSearch && matchesCategory;
     });
   }, [members, searchQuery, selectedCategory]);

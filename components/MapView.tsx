@@ -141,7 +141,7 @@ function groupsToGeoJSON(
 
 interface MapViewProps {
   members: Member[];
-  selectedCategory: string | null;
+  selectedCategory: string[];
   activeHobbies: string[];
   focusedMember: Member | null;
   onMemberClick: (member: Member) => void;
@@ -167,9 +167,9 @@ export default function MapView({
   const allGroups = useMemo(() => buildGroups(members), [members]);
 
   const filteredGroups = useMemo(() => {
-    if (!selectedCategory) return allGroups;
+    if (selectedCategory.length === 0) return allGroups;
     return allGroups.filter((g) =>
-      g.members.some((m) => m.category === selectedCategory),
+      g.members.some((m) => selectedCategory.includes(m.category)),
     );
   }, [allGroups, selectedCategory]);
 

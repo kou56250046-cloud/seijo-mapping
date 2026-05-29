@@ -11,10 +11,10 @@ interface SidebarProps {
   filteredMembers: Member[];
   allHobbies: string[];
   searchQuery: string;
-  selectedCategory: Category | null;
+  selectedCategory: Category[];
   activeHobbies: string[];
   onSearch: (q: string) => void;
-  onCategoryChange: (cat: Category | null) => void;
+  onCategoryChange: (cats: Category[]) => void;
   onHobbyChange: (hobbies: string[]) => void;
   onEdit: (member: Member) => void;
   onDelete: (id: string) => void;
