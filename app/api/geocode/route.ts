@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createServerClient } from '@/lib/supabase';
 import { geocodeAddress } from '@/lib/geocode';
+import { COOKIE_NAME, verifyToken } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
+  const token = (await cookies()).get(COOKIE_NAME)?.value;
+  if (!token || !(await verifyToken(token))) {
+    return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+  }
+
   const { id, address } = await request.json();
   if (!id || !address) {
     return NextResponse.json({ error: 'id と address が必要です' }, { status: 400 });
