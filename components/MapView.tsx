@@ -13,15 +13,21 @@ type HouseholdGroup = {
   lng: number;
 };
 
+function normalizeAddressKey(address: string): string {
+  return address.replace(/\s+/g, '').replace(/[０-９]/g, c =>
+    String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 0x30)
+  );
+}
+
 function buildGroups(members: Member[]): HouseholdGroup[] {
   const groupMap = new Map<string, Member[]>();
 
   for (const member of members) {
     if (!member.lat || !member.lng) continue;
-    // household_id があれば優先、なければ座標（小数5桁）でグループ化
+    // household_id があれば優先、なければ正規化した住所文字列でグループ化
     const key = member.household_id
       ? `h-${member.household_id}`
-      : `c-${member.lat.toFixed(5)}-${member.lng.toFixed(5)}`;
+      : `a-${normalizeAddressKey(member.address)}`;
     const group = groupMap.get(key) ?? [];
     groupMap.set(key, [...group, member]);
   }
